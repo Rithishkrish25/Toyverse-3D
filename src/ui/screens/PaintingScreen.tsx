@@ -3,9 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
 import { t } from '../../i18n';
 import SvgToy from '../../toys/SvgToys';
-import WorkshopCanvas from '../../scene/WorkshopCanvas';
-import ToyLoader from '../../toys/ToyLoader';
-import { ToyRenderModeProvider } from '../../toys/ToyRenderModeContext';
 import Palette from '../components/Palette';
 import HUD from '../components/HUD';
 import UndoResetBar from '../components/UndoResetBar';
@@ -24,7 +21,6 @@ const TOY_ICONS: Record<ToyId, string> = {
 
 /**
  * Toy selector shown at top of the paintable panel.
- * Clicking a different toy navigates to it immediately.
  */
 function ToySelector({ current }: { current: ToyId }): React.ReactElement {
   const navigate = useNavigate();
@@ -60,8 +56,8 @@ function ToySelector({ current }: { current: ToyId }): React.ReactElement {
  * Main painting screen — 2D SVG colouring challenge.
  *
  * Layout:
- *   Top bar: timer (left) | toy label (centre) | submit (right)
- *   Main area: target image (left 38%) | toy selector + paintable SVG (right 62%)
+ *   Top bar: timer (left) | label (centre) | submit (right)
+ *   Main area: SVG target image (left 38%) | toy selector + paintable SVG (right 62%)
  *   Bottom bar: palette | undo/reset
  */
 export default function PaintingScreen(): React.ReactElement {
@@ -70,30 +66,31 @@ export default function PaintingScreen(): React.ReactElement {
   const locale = useGameStore((s) => s.locale);
   const phase = useGameStore((s) => s.phase);
   const activeToyId = useGameStore((s) => s.activeToyId);
+  const partColors = useGameStore((s) => s.partColors);
+  const activeColor = useGameStore((s) => s.activeColor);
   const selectToy = useGameStore((s) => s.selectToy);
+  const paintPart = useGameStore((s) => s.paintPart);
   const tickTimer = useGameStore((s) => s.tickTimer);
   const pauseTimer = useGameStore((s) => s.pauseTimer);
   const resumeTimer = useGameStore((s) => s.resumeTimer);
   const showNoPalettePrompt = useGameStore((s) => s.showNoPalettePrompt);
+  const showNoPalettePromptAction = useGameStore((s) => s.showNoPalettePromptAction);
   const storageWarning = useGameStore((s) => s.storageWarning);
 
   const validToyId = VALID_TOY_IDS.includes(toyId as ToyId) ? (toyId as ToyId) : null;
 
-  // Initialize toy on mount
   useEffect(() => {
     if (validToyId && (!activeToyId || activeToyId !== validToyId)) {
       selectToy(validToyId);
     }
   }, [validToyId, activeToyId, selectToy]);
 
-  // Timer tick every second while painting
   useEffect(() => {
     if (phase !== 'painting') return;
     const id = setInterval(() => tickTimer(), 1000);
     return () => clearInterval(id);
   }, [phase, tickTimer]);
 
-  // Blur/focus timer pause/resume
   useEffect(() => {
     const onBlur = () => pauseTimer();
     const onFocus = () => resumeTimer();
@@ -119,6 +116,14 @@ export default function PaintingScreen(): React.ReactElement {
   }
 
   const isPainting = phase === 'painting' || phase === 'submitting';
+
+  const handlePartClick = (partName: string) => {
+    if (!activeColor) {
+      showNoPalettePromptAction();
+      return;
+    }
+    paintPart(partName, activeColor);
+  };
 
   return (
     <div style={{
@@ -153,7 +158,7 @@ export default function PaintingScreen(): React.ReactElement {
       {/* ── Main area ── */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
 
-        {/* LEFT — Target reference image */}
+        {/* LEFT — SVG target reference */}
         {isPainting && (
           <div style={{
             width: '38%',
@@ -182,31 +187,31 @@ export default function PaintingScreen(): React.ReactElement {
           </div>
         )}
 
-        {/* RIGHT — Paintable 3D toy */}
+        {/* RIGHT — Paintable SVG toy */}
         <div style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '8px',
+          padding: '16px',
           position: 'relative',
           overflow: 'hidden',
-          minHeight: 0,
         }}>
           <ToySelector current={validToyId} />
 
-          {/* 3D canvas — takes remaining space; PartMesh handles clicks */}
-          <div style={{ width: '100%', flex: 1, minHeight: 0, borderRadius: '12px', overflow: 'hidden' }}
-               className={(phase === 'complete' || phase === 'timeout') ? 'toy-spin-anim' : undefined}>
-            <WorkshopCanvas activeToyId={validToyId}>
-              <ToyRenderModeProvider value="paintable">
-                <ToyLoader toyId={validToyId} />
-              </ToyRenderModeProvider>
-            </WorkshopCanvas>
+          <div
+            style={{ width: '100%', maxWidth: '380px' }}
+            className={(phase === 'complete' || phase === 'timeout') ? 'toy-spin-anim' : undefined}
+          >
+            <SvgToy
+              toyId={validToyId}
+              partColors={partColors}
+              onPartClick={handlePartClick}
+              targetMode={false}
+            />
           </div>
 
-          {/* No colour selected prompt */}
           {showNoPalettePrompt && (
             <div style={{
               position: 'absolute',
@@ -226,7 +231,6 @@ export default function PaintingScreen(): React.ReactElement {
             </div>
           )}
 
-          {/* Storage warning */}
           {storageWarning && (
             <div style={{
               position: 'absolute',

@@ -17,11 +17,6 @@ export default defineConfig({
       '@utils': path.resolve(__dirname, 'src/utils'),
     },
   },
-  build: {
-    rollupOptions: {
-      external: ['three', '@react-three/fiber', '@react-three/drei'],
-    },
-  },
   test: {
     globals: true,
     environment: 'jsdom',
