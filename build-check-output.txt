@@ -1,0 +1,27 @@
+[36mvite v5.0.8 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 655 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                               [39m[1m[2m  0.79 kB[22m[1m[22m[2m │ gzip:   0.47 kB[22m
+[2mdist/[22m[35massets/index-CCx2rf8v.css                [39m[1m[2m  3.50 kB[22m[1m[22m[2m │ gzip:   1.30 kB[22m
+[2mdist/[22m[36massets/ToyRenderModeContext-BUkNU7yM.js  [39m[1m[2m  0.11 kB[22m[1m[22m[2m │ gzip:   0.13 kB[22m
+[2mdist/[22m[36massets/storageUtils-C3udYjo5.js          [39m[1m[2m  0.16 kB[22m[1m[22m[2m │ gzip:   0.12 kB[22m
+[2mdist/[22m[36massets/StarRating--0uzGLo0.js            [39m[1m[2m  0.29 kB[22m[1m[22m[2m │ gzip:   0.26 kB[22m
+[2mdist/[22m[36massets/PartMesh-D5Mh3zLS.js              [39m[1m[2m  1.06 kB[22m[1m[22m[2m │ gzip:   0.57 kB[22m
+[2mdist/[22m[36massets/Car3D-BBmjmfRu.js                 [39m[1m[2m  1.39 kB[22m[1m[22m[2m │ gzip:   0.43 kB[22m
+[2mdist/[22m[36massets/Lorry3D-C4ZhQ0nO.js               [39m[1m[2m  1.39 kB[22m[1m[22m[2m │ gzip:   0.43 kB[22m
+[2mdist/[22m[36massets/Bike3D-BHUaBjCH.js                [39m[1m[2m  3.08 kB[22m[1m[22m[2m │ gzip:   0.73 kB[22m
+[2mdist/[22m[36massets/SettingsScreen-B6cnw03p.js        [39m[1m[2m  4.47 kB[22m[1m[22m[2m │ gzip:   1.56 kB[22m
+[2mdist/[22m[36massets/DashboardScreen-BOFG4Lfn.js       [39m[1m[2m  4.61 kB[22m[1m[22m[2m │ gzip:   1.72 kB[22m
+[2mdist/[22m[36massets/HomeScreen-D8mpoCGa.js            [39m[1m[2m  4.93 kB[22m[1m[22m[2m │ gzip:   1.62 kB[22m
+[2mdist/[22m[36massets/index-BeIV463E.js                 [39m[1m[2m 19.86 kB[22m[1m[22m[2m │ gzip:   6.76 kB[22m
+[2mdist/[22m[36massets/index-CVwMWPSW.js                 [39m[1m[2m163.45 kB[22m[1m[22m[2m │ gzip:  53.42 kB[22m
+[2mdist/[22m[36massets/PaintingScreen-CiZNTOe-.js        [39m[1m[33m827.87 kB[39m[22m[2m │ gzip: 223.76 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 13.76s[39m
+EXIT_CODE=0 

@@ -69,9 +69,9 @@ export default function CameraController(): React.ReactElement {
   return (
     <OrbitControls
       ref={controlsRef}
-      minDistance={1}
-      maxDistance={10}
-      maxPolarAngle={Math.PI / 2}
+      minDistance={2}
+      maxDistance={8}
+      maxPolarAngle={Math.PI * 0.75}
       enableDamping
       dampingFactor={0.05}
       autoRotate={false}

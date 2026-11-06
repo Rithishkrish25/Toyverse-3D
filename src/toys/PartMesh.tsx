@@ -73,7 +73,7 @@ export default function PartMesh({
   const handlePointerOver = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     if (materialRef.current) {
-      materialRef.current.emissive.set(0x444444);
+      materialRef.current.emissive.set(0x666666);
     }
   }, []);
 
@@ -112,7 +112,7 @@ export default function PartMesh({
       {...pointerHandlers}
     >
       {children}
-      <meshStandardMaterial ref={materialRef} color={displayColor} />
+      <meshStandardMaterial ref={materialRef} color={displayColor} roughness={0.6} metalness={0.1} />
     </mesh>
   );
 }

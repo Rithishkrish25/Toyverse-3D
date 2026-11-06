@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
 import { t } from '../../i18n';
+import { LEVEL_TO_TOY } from '../../missions/missionData';
 
 const navBtnStyle: React.CSSProperties = {
   padding: '8px 18px',
@@ -16,13 +17,18 @@ const navBtnStyle: React.CSSProperties = {
 
 /**
  * Start Screen — warm cream landing view.
- * Displays TOYVERSE title, tagline, and a coral START GAME button.
- * Renders when phase === 'start'.
+ * START GAME goes directly to Level 1 (Car) without a selection screen.
  */
 export default function StartScreen(): React.ReactElement {
   const navigate = useNavigate();
   const locale = useGameStore((s) => s.locale);
   const startGame = useGameStore((s) => s.startGame);
+
+  const handleStart = () => {
+    startGame();
+    // Navigate directly to Level 1 toy
+    navigate(`/paint/${LEVEL_TO_TOY[1]}`);
+  };
 
   return (
     <div style={{
@@ -63,7 +69,7 @@ export default function StartScreen(): React.ReactElement {
       </p>
 
       <button
-        onClick={startGame}
+        onClick={handleStart}
         style={{
           padding: '18px 56px',
           fontSize: '20px',

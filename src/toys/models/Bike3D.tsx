@@ -55,24 +55,24 @@ export default function Bike3D(): React.ReactElement {
     <group position={[0, 0, 0]}>
 
       {/* ── REAR WHEEL ──────────────────────────────────────────────────── */}
-      <PartMesh partName="wheel-rear" defaultColor="#CCCCCC"
+      <PartMesh partName="wheel-rear" defaultColor="#000000"
         position={[RA.x, RA.y, 0]}>
         <torusGeometry args={[0.9, 0.11, 16, 48]} />
       </PartMesh>
       {/* Hub */}
-      <PartMesh partName="wheel-rear" defaultColor="#CCCCCC"
+      <PartMesh partName="wheel-rear" defaultColor="#000000"
         position={[RA.x, RA.y, 0]}
         rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.08, 0.08, 0.30, 12]} />
       </PartMesh>
 
       {/* ── FRONT WHEEL ─────────────────────────────────────────────────── */}
-      <PartMesh partName="wheel-front" defaultColor="#CCCCCC"
+      <PartMesh partName="wheel-front" defaultColor="#000000"
         position={[FA.x, FA.y, 0]}>
         <torusGeometry args={[0.9, 0.11, 16, 48]} />
       </PartMesh>
       {/* Hub */}
-      <PartMesh partName="wheel-front" defaultColor="#CCCCCC"
+      <PartMesh partName="wheel-front" defaultColor="#000000"
         position={[FA.x, FA.y, 0]}
         rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.08, 0.08, 0.30, 12]} />
@@ -125,14 +125,14 @@ export default function Bike3D(): React.ReactElement {
       {/* ── FORKS ───────────────────────────────────────────────────────── */}
 
       {/* Fork left: HTb → (FA.x, FA.y, +0.12) */}
-      <PartMesh partName="handlebar" defaultColor="#AAAAAA"
+      <PartMesh partName="handlebar" defaultColor="#808080"
         position={[forkL.mx, forkL.my, 0.06]}
         rotation={[0, 0, forkL.angle]}>
         <cylinderGeometry args={[0.04, 0.04, forkL.len, 8]} />
       </PartMesh>
 
       {/* Fork right: HTb → (FA.x, FA.y, -0.12) */}
-      <PartMesh partName="handlebar" defaultColor="#AAAAAA"
+      <PartMesh partName="handlebar" defaultColor="#808080"
         position={[forkR.mx, forkR.my, -0.06]}
         rotation={[0, 0, forkR.angle]}>
         <cylinderGeometry args={[0.04, 0.04, forkR.len, 8]} />
@@ -141,14 +141,14 @@ export default function Bike3D(): React.ReactElement {
       {/* ── HANDLEBAR ───────────────────────────────────────────────────── */}
 
       {/* Stem: HTt upward ~0.35 units */}
-      <PartMesh partName="handlebar" defaultColor="#AAAAAA"
+      <PartMesh partName="handlebar" defaultColor="#808080"
         position={[HTt.x, HTt.y + 0.175, 0]}
         rotation={[0, 0, 0]}>
         <cylinderGeometry args={[0.04, 0.04, 0.35, 8]} />
       </PartMesh>
 
       {/* Crossbar: horizontal at top of stem */}
-      <PartMesh partName="handlebar" defaultColor="#AAAAAA"
+      <PartMesh partName="handlebar" defaultColor="#808080"
         position={[HTt.x, HTt.y + 0.38, 0]}
         rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.04, 0.04, 0.70, 8]} />
@@ -157,14 +157,14 @@ export default function Bike3D(): React.ReactElement {
       {/* ── SEAT ────────────────────────────────────────────────────────── */}
 
       {/* Seat post: SJ upward ~0.38 units */}
-      <PartMesh partName="seat" defaultColor="#BBBBBB"
+      <PartMesh partName="seat" defaultColor="#8B4513"
         position={[SJ.x, SJ.y + 0.19, 0]}
         rotation={[0, 0, 0]}>
         <cylinderGeometry args={[0.04, 0.04, 0.38, 8]} />
       </PartMesh>
 
       {/* Saddle */}
-      <PartMesh partName="seat" defaultColor="#BBBBBB"
+      <PartMesh partName="seat" defaultColor="#8B4513"
         position={[SJ.x - 0.05, SJ.y + 0.40, 0]}>
         <boxGeometry args={[0.58, 0.07, 0.20]} />
       </PartMesh>

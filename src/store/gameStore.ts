@@ -9,8 +9,9 @@ import type {
   PaintAction,
   SessionResult,
 } from './types';
-import { MISSIONS } from '../missions/missionData';
+import { MISSIONS, LEVEL_TO_TOY } from '../missions/missionData';
 import { TOY_DEFINITIONS } from '../toys/toyRegistry';
+import { evaluatePaint } from '../missions/MissionEngine';
 
 // ---------------------------------------------------------------------------
 // Achievement definitions
@@ -75,6 +76,38 @@ function readPersistedLocale(): Locale {
   return 'en';
 }
 
+/** Read persisted unlocked levels from localStorage. Always includes level 1. */
+function readUnlockedLevels(): number[] {
+  try {
+    const raw = localStorage.getItem('toyverse_unlocked_levels');
+    if (raw) {
+      const parsed = JSON.parse(raw) as number[];
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch { /* ignore */ }
+  return [1];
+}
+
+/** Read persisted completed levels from localStorage. */
+function readCompletedLevels(): number[] {
+  try {
+    const raw = localStorage.getItem('toyverse_completed_levels');
+    if (raw) {
+      const parsed = JSON.parse(raw) as number[];
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch { /* ignore */ }
+  return [];
+}
+
+/** Persist level progress to localStorage. */
+function persistLevels(unlocked: number[], completed: number[]): void {
+  try {
+    localStorage.setItem('toyverse_unlocked_levels', JSON.stringify(unlocked));
+    localStorage.setItem('toyverse_completed_levels', JSON.stringify(completed));
+  } catch { /* ignore */ }
+}
+
 /** Stars from score. */
 function starsFromScore(score: number): 0 | 1 | 2 | 3 {
   if (score >= 90) return 3;
@@ -137,6 +170,9 @@ const initialState: GameStateData = {
   colorsUsedThisSession: [],
   locale: readPersistedLocale(),
   storageWarning: false,
+  currentLevel: 1,
+  unlockedLevels: readUnlockedLevels(),
+  completedLevels: readCompletedLevels(),
 };
 
 // ---------------------------------------------------------------------------
@@ -179,6 +215,37 @@ export const useGameStore = create<GameState>()((set, get) => ({
     });
   },
 
+  selectLevel: (level: number) => {
+    const state = get();
+    if (!state.unlockedLevels.includes(level)) return; // guard: locked level
+    const toyId = LEVEL_TO_TOY[level];
+    if (!toyId) return;
+    const mission = MISSIONS[toyId];
+    let duration = mission.durationSeconds;
+    try {
+      const stored = localStorage.getItem('toyverse_timer_duration');
+      if (stored !== null) {
+        const parsed = parseInt(stored, 10);
+        if (!isNaN(parsed) && parsed >= 30 && parsed <= 600) duration = parsed;
+      }
+    } catch { /* ignore */ }
+    set({
+      currentLevel: level,
+      activeToyId: toyId,
+      activeMission: mission,
+      phase: 'painting',
+      partColors: {},
+      paintHistory: [],
+      score: 0,
+      correctParts: 0,
+      incorrectParts: 0,
+      timeTaken: 0,
+      colorsUsedThisSession: [],
+      remainingSeconds: duration,
+      timerRunning: true,
+    });
+  },
+
   paintPart: (partName: string, color: string) => {
     const state = get();
     const previousColor = state.partColors[partName] ?? '#CCCCCC';
@@ -194,20 +261,53 @@ export const useGameStore = create<GameState>()((set, get) => ({
       ? state.colorsUsedThisSession
       : [...state.colorsUsedThisSession, color];
 
+    // Live mission evaluation
+    const evalResult = evaluatePaint(
+      state.activeMission,
+      partName,
+      color,
+      newPartColors
+    );
+    const newScore = Math.max(0, state.score + evalResult.scoreDelta);
+    const newCorrectParts = state.correctParts + (evalResult.isTargetHit ? 1 : 0);
+
     const snap: GameStateData = {
       ...state,
       paintHistory: newPaintHistory,
       partColors: newPartColors,
       colorsUsedThisSession: newColorsUsed,
+      score: newScore,
+      correctParts: newCorrectParts,
     };
     const { newUnlocked, lastToast } = evalAchievements(snap, state.unlockedAchievements);
-    set({
-      paintHistory: newPaintHistory,
-      partColors: newPartColors,
-      colorsUsedThisSession: newColorsUsed,
-      unlockedAchievements: newUnlocked,
-      pendingAchievementToast: lastToast !== null ? lastToast : state.pendingAchievementToast,
-    });
+
+    // Auto-complete when all mission targets are correctly painted
+    if (evalResult.isComplete) {
+      set({
+        paintHistory: newPaintHistory,
+        partColors: newPartColors,
+        colorsUsedThisSession: newColorsUsed,
+        score: newScore,
+        correctParts: newCorrectParts,
+        unlockedAchievements: newUnlocked,
+        pendingAchievementToast: lastToast !== null ? lastToast : state.pendingAchievementToast,
+        timerRunning: false,
+        phase: 'submitting',
+      });
+      get().calculateResults();
+      get().endSession();
+      set({ phase: 'complete' });
+    } else {
+      set({
+        paintHistory: newPaintHistory,
+        partColors: newPartColors,
+        colorsUsedThisSession: newColorsUsed,
+        score: newScore,
+        correctParts: newCorrectParts,
+        unlockedAchievements: newUnlocked,
+        pendingAchievementToast: lastToast !== null ? lastToast : state.pendingAchievementToast,
+      });
+    }
   },
 
   undoPaint: () => {
@@ -242,6 +342,20 @@ export const useGameStore = create<GameState>()((set, get) => ({
       set({ remainingSeconds: 0, timerRunning: false, phase: 'timeout' });
       get().calculateResults();
       get().endSession();
+      // Unlock next level if ≥1 star even on timeout
+      const nextState = get();
+      const stars = starsFromScore(nextState.score);
+      if (stars >= 1) {
+        const nextLevel = nextState.currentLevel + 1;
+        const newUnlocked = nextState.unlockedLevels.includes(nextLevel)
+          ? nextState.unlockedLevels
+          : [...nextState.unlockedLevels, nextLevel];
+        const newCompleted = nextState.completedLevels.includes(nextState.currentLevel)
+          ? nextState.completedLevels
+          : [...nextState.completedLevels, nextState.currentLevel];
+        persistLevels(newUnlocked, newCompleted);
+        set({ unlockedLevels: newUnlocked, completedLevels: newCompleted });
+      }
     } else {
       set({ remainingSeconds: remainingSeconds - 1 });
     }
@@ -292,14 +406,17 @@ export const useGameStore = create<GameState>()((set, get) => ({
     const totalParts = toyDef.parts.length;
     let correctParts = 0;
     for (const target of state.activeMission.targets) {
-      const painted = state.partColors[target.partName] ?? '#CCCCCC';
+      // Use painted colour; fall back to the part's defaultColor (not #CCCCCC)
+      // so wheels that were never repainted still match their black target.
+      const partDef = toyDef.parts.find((p) => p.name === target.partName);
+      const fallback = (partDef as { name: string; defaultColor?: string } | undefined)?.defaultColor ?? '#CCCCCC';
+      const painted = state.partColors[target.partName] ?? fallback;
       if (painted.toUpperCase() === target.targetColor.toUpperCase()) {
         correctParts++;
       }
     }
     const accuracy = totalParts > 0 ? Math.round((correctParts / totalParts) * 100) : 0;
     const timeTaken = Math.max(0, state.activeMission.durationSeconds - state.remainingSeconds);
-    // Evaluate end-of-session achievements with the result state snapshot
     const snap: GameStateData = {
       ...state,
       score: accuracy,
@@ -324,13 +441,53 @@ export const useGameStore = create<GameState>()((set, get) => ({
     set({ timerRunning: false, phase: 'submitting' });
     get().calculateResults();
     get().endSession();
+    // Unlock next level if this level earned ≥1 star
+    const nextState = get();
+    const stars = starsFromScore(nextState.score);
+    if (stars >= 1) {
+      const nextLevel = nextState.currentLevel + 1;
+      const newUnlocked = nextState.unlockedLevels.includes(nextLevel)
+        ? nextState.unlockedLevels
+        : [...nextState.unlockedLevels, nextLevel];
+      const newCompleted = nextState.completedLevels.includes(nextState.currentLevel)
+        ? nextState.completedLevels
+        : [...nextState.completedLevels, nextState.currentLevel];
+      persistLevels(newUnlocked, newCompleted);
+      set({ unlockedLevels: newUnlocked, completedLevels: newCompleted });
+    }
     set({ phase: 'complete' });
   },
 
   startGame: () => {
-    const { phase } = get();
-    if (phase !== 'start') return;
-    set({ phase: 'selection' });
+    const state = get();
+    if (state.phase !== 'start') return;
+    // Go directly to Level 1 (Car) — skip the level selection screen
+    const level = 1;
+    const toyId = LEVEL_TO_TOY[level];
+    const mission = MISSIONS[toyId];
+    let duration = mission.durationSeconds;
+    try {
+      const stored = localStorage.getItem('toyverse_timer_duration');
+      if (stored !== null) {
+        const parsed = parseInt(stored, 10);
+        if (!isNaN(parsed) && parsed >= 30 && parsed <= 600) duration = parsed;
+      }
+    } catch { /* ignore */ }
+    set({
+      currentLevel: level,
+      activeToyId: toyId,
+      activeMission: mission,
+      phase: 'painting',
+      partColors: {},
+      paintHistory: [],
+      score: 0,
+      correctParts: 0,
+      incorrectParts: 0,
+      timeTaken: 0,
+      colorsUsedThisSession: [],
+      remainingSeconds: duration,
+      timerRunning: true,
+    });
   },
 
   resetChallenge: () => {

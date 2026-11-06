@@ -1,6 +1,6 @@
 export type ToyId = 'car' | 'bike' | 'lorry';
 export type Locale = 'en' | 'ta';
-export type PaletteColorId = 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'purple' | 'pink' | 'brown' | 'white' | 'grey' | 'black';
+export type PaletteColorId = 'red' | 'coral-orange' | 'yellow' | 'green' | 'sky-blue' | 'blue' | 'purple' | 'pink' | 'brown' | 'white' | 'grey' | 'black';
 
 export type Phase = 'start' | 'selection' | 'painting' | 'submitting' | 'complete' | 'timeout';
 
@@ -65,6 +65,7 @@ export interface SessionResult {
 
 export interface GameActions {
   selectToy: (toyId: ToyId) => void;
+  selectLevel: (level: number) => void;
   paintPart: (partName: string, color: string) => void;
   undoPaint: () => void;
   resetPainting: () => void;
@@ -106,6 +107,12 @@ export interface GameStateData {
   colorsUsedThisSession: string[];
   locale: Locale;
   storageWarning: boolean;
+  /** 1-based current level (1=Car, 2=Bike, 3=Lorry) */
+  currentLevel: number;
+  /** Set of level numbers the player has unlocked (always includes 1) */
+  unlockedLevels: number[];
+  /** Set of level numbers the player has completed */
+  completedLevels: number[];
 }
 
 export type GameState = GameStateData & GameActions;

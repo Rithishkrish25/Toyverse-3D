@@ -2,62 +2,26 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
 import { t } from '../../i18n';
-import SvgToy from '../../toys/SvgToys';
 import Palette from '../components/Palette';
 import HUD from '../components/HUD';
 import UndoResetBar from '../components/UndoResetBar';
 import AchievementToast from '../components/AchievementToast';
 import SubmitButton from '../components/SubmitButton';
 import ResultsOverlay from '../components/ResultsOverlay';
+import TargetImagePanel from '../components/TargetImagePanel';
+import WorkshopCanvas from '../../scene/WorkshopCanvas';
+import { ToyRenderModeProvider } from '../../toys/ToyRenderModeContext';
+import ToyLoader from '../../toys/ToyLoader';
 import type { ToyId } from '../../store/types';
 
 const VALID_TOY_IDS: ToyId[] = ['car', 'bike', 'lorry'];
 
-const TOY_ICONS: Record<ToyId, string> = {
-  car: '🚗',
-  bike: '🚲',
-  lorry: '🚛',
-};
-
 /**
- * Toy selector shown at top of the paintable panel.
- */
-function ToySelector({ current }: { current: ToyId }): React.ReactElement {
-  const navigate = useNavigate();
-  const selectToy = useGameStore((s) => s.selectToy);
-
-  return (
-    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-      {VALID_TOY_IDS.map((id) => (
-        <button
-          key={id}
-          onClick={() => { selectToy(id); navigate(`/paint/${id}`); }}
-          title={id}
-          style={{
-            fontSize: '26px',
-            padding: '7px 14px',
-            background: current === id ? '#FF6B35' : '#fff',
-            border: current === id ? '2px solid #FF6B35' : '2px solid #E8DDCA',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            boxShadow: current === id ? '0 2px 8px rgba(255,107,53,0.3)' : 'none',
-            transition: 'all 0.15s',
-            lineHeight: 1,
-          }}
-        >
-          {TOY_ICONS[id]}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/**
- * Main painting screen — 2D SVG colouring challenge.
+ * Main painting screen — 3D colouring challenge.
  *
  * Layout:
- *   Top bar: timer (left) | label (centre) | submit (right)
- *   Main area: SVG target image (left 38%) | toy selector + paintable SVG (right 62%)
+ *   Top bar: HUD (timer+score+hints) | label | submit
+ *   Main area: TargetImagePanel (left 38%) | WorkshopCanvas with 3D toy (right 62%)
  *   Bottom bar: palette | undo/reset
  */
 export default function PaintingScreen(): React.ReactElement {
@@ -66,15 +30,11 @@ export default function PaintingScreen(): React.ReactElement {
   const locale = useGameStore((s) => s.locale);
   const phase = useGameStore((s) => s.phase);
   const activeToyId = useGameStore((s) => s.activeToyId);
-  const partColors = useGameStore((s) => s.partColors);
-  const activeColor = useGameStore((s) => s.activeColor);
   const selectToy = useGameStore((s) => s.selectToy);
-  const paintPart = useGameStore((s) => s.paintPart);
   const tickTimer = useGameStore((s) => s.tickTimer);
   const pauseTimer = useGameStore((s) => s.pauseTimer);
   const resumeTimer = useGameStore((s) => s.resumeTimer);
   const showNoPalettePrompt = useGameStore((s) => s.showNoPalettePrompt);
-  const showNoPalettePromptAction = useGameStore((s) => s.showNoPalettePromptAction);
   const storageWarning = useGameStore((s) => s.storageWarning);
 
   const validToyId = VALID_TOY_IDS.includes(toyId as ToyId) ? (toyId as ToyId) : null;
@@ -117,14 +77,6 @@ export default function PaintingScreen(): React.ReactElement {
 
   const isPainting = phase === 'painting' || phase === 'submitting';
 
-  const handlePartClick = (partName: string) => {
-    if (!activeColor) {
-      showNoPalettePromptAction();
-      return;
-    }
-    paintPart(partName, activeColor);
-  };
-
   return (
     <div style={{
       background: '#FFF7E8',
@@ -158,60 +110,39 @@ export default function PaintingScreen(): React.ReactElement {
       {/* ── Main area ── */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
 
-        {/* LEFT — SVG target reference */}
+        {/* LEFT — 3D target reference (TargetImagePanel) */}
         {isPainting && (
           <div style={{
             width: '38%',
             flexShrink: 0,
-            background: '#fff',
+            background: '#1a1a2e',
             borderRight: '1.5px solid #E8DDCA',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
+            overflow: 'hidden',
           }}>
-            <div style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              color: '#888',
-              marginBottom: '10px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.6px',
-            }}>
-              {t('painting.targetImage', locale)}
-            </div>
-            <div style={{ width: '100%', maxWidth: '260px' }}>
-              <SvgToy toyId={validToyId} partColors={{}} targetMode={true} />
-            </div>
+            <TargetImagePanel toyId={validToyId} />
           </div>
         )}
 
-        {/* RIGHT — Paintable SVG toy */}
+        {/* RIGHT — Interactive 3D paintable canvas */}
         <div style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '16px',
           position: 'relative',
           overflow: 'hidden',
+          minHeight: 0,
         }}>
-          <ToySelector current={validToyId} />
-
-          <div
-            style={{ width: '100%', maxWidth: '380px' }}
-            className={(phase === 'complete' || phase === 'timeout') ? 'toy-spin-anim' : undefined}
-          >
-            <SvgToy
-              toyId={validToyId}
-              partColors={partColors}
-              onPartClick={handlePartClick}
-              targetMode={false}
-            />
+          <div style={{ width: '100%', flex: 1, minHeight: 0 }}>
+            <WorkshopCanvas>
+              <ToyRenderModeProvider value="paintable">
+                <ToyLoader toyId={validToyId} />
+              </ToyRenderModeProvider>
+            </WorkshopCanvas>
           </div>
 
+          {/* No-palette prompt overlay */}
           {showNoPalettePrompt && (
             <div style={{
               position: 'absolute',
@@ -231,6 +162,7 @@ export default function PaintingScreen(): React.ReactElement {
             </div>
           )}
 
+          {/* Storage warning overlay */}
           {storageWarning && (
             <div style={{
               position: 'absolute',

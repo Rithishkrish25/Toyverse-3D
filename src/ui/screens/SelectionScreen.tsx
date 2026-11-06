@@ -1,14 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
-import { t } from '../../i18n';
-import type { ToyId } from '../../store/types';
+import { LEVEL_TO_TOY, TOTAL_LEVELS } from '../../missions/missionData';
 
-const TOYS: { id: ToyId; icon: string; labelEn: string; labelTa: string }[] = [
-  { id: 'car', icon: '🚗', labelEn: 'Car', labelTa: 'கார்' },
-  { id: 'bike', icon: '🚲', labelEn: 'Bike', labelTa: 'சைக்கிள்' },
-  { id: 'lorry', icon: '🚛', labelEn: 'Lorry', labelTa: 'லாரி' },
-];
+const LEVEL_ICONS: Record<number, string> = { 1: '🚗', 2: '🚲', 3: '🚛' };
+const LEVEL_NAMES: Record<number, string> = { 1: 'Car', 2: 'Bike', 3: 'Lorry' };
 
 const navBtnStyle: React.CSSProperties = {
   padding: '8px 18px',
@@ -22,16 +18,20 @@ const navBtnStyle: React.CSSProperties = {
 };
 
 /**
- * Selection Screen — choose one of three vehicles to colour.
- * Renders when phase === 'selection'.
+ * Level selection screen.
+ * Shows three sequential levels: Car (1), Bike (2), Lorry (3).
+ * Level 1 is always unlocked. Completing a level unlocks the next.
  */
 export default function SelectionScreen(): React.ReactElement {
   const navigate = useNavigate();
-  const locale = useGameStore((s) => s.locale);
-  const selectToy = useGameStore((s) => s.selectToy);
+  const selectLevel = useGameStore((s) => s.selectLevel);
+  const unlockedLevels = useGameStore((s) => s.unlockedLevels);
+  const completedLevels = useGameStore((s) => s.completedLevels);
 
-  const handleSelect = (toyId: ToyId) => {
-    selectToy(toyId);
+  const handleSelect = (level: number) => {
+    if (!unlockedLevels.includes(level)) return;
+    const toyId = LEVEL_TO_TOY[level];
+    selectLevel(level);
     navigate(`/paint/${toyId}`);
   };
 
@@ -50,10 +50,10 @@ export default function SelectionScreen(): React.ReactElement {
       {/* Nav */}
       <nav style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '10px' }}>
         <button onClick={() => navigate('/dashboard')} style={navBtnStyle}>
-          {t('start.dashboard', locale)}
+          Dashboard
         </button>
         <button onClick={() => navigate('/settings')} style={navBtnStyle}>
-          {t('start.settings', locale)}
+          Settings
         </button>
       </nav>
 
@@ -64,47 +64,80 @@ export default function SelectionScreen(): React.ReactElement {
         marginBottom: '8px',
         textAlign: 'center',
       }}>
-        {t('selection.title', locale)}
+        Choose Your Level
       </h1>
       <p style={{ color: '#888', marginBottom: '44px', fontSize: '16px', textAlign: 'center' }}>
-        {t('selection.subtitle', locale)}
+        Complete each level to unlock the next
       </p>
 
       <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
-        {TOYS.map((toy) => (
-          <button
-            key={toy.id}
-            onClick={() => handleSelect(toy.id)}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              padding: '32px 44px',
-              background: '#fff',
-              border: '2px solid #E8DDCA',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
-              transition: 'all 0.18s',
-              minWidth: '160px',
-            }}
-            onMouseOver={e => {
-              e.currentTarget.style.transform = 'scale(1.06)';
-              e.currentTarget.style.borderColor = '#FF6B35';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,107,53,0.2)';
-            }}
-            onMouseOut={e => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.borderColor = '#E8DDCA';
-              e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)';
-            }}
-          >
-            <span style={{ fontSize: '64px', lineHeight: 1, marginBottom: '12px' }}>{toy.icon}</span>
-            <span style={{ fontSize: '18px', fontWeight: 700, color: '#2D2D2D' }}>
-              {locale === 'ta' ? toy.labelTa : toy.labelEn}
-            </span>
-          </button>
-        ))}
+        {Array.from({ length: TOTAL_LEVELS }, (_, i) => i + 1).map((level) => {
+          const isUnlocked = unlockedLevels.includes(level);
+          const isCompleted = completedLevels.includes(level);
+
+          return (
+            <button
+              key={level}
+              onClick={() => handleSelect(level)}
+              disabled={!isUnlocked}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '28px 40px',
+                background: isUnlocked ? '#fff' : '#f0ede8',
+                border: isCompleted
+                  ? '2px solid #4CAF50'
+                  : isUnlocked
+                    ? '2px solid #E8DDCA'
+                    : '2px dashed #ccc',
+                borderRadius: '20px',
+                cursor: isUnlocked ? 'pointer' : 'not-allowed',
+                boxShadow: isUnlocked ? '0 2px 12px rgba(0,0,0,0.07)' : 'none',
+                opacity: isUnlocked ? 1 : 0.5,
+                transition: 'all 0.18s',
+                minWidth: '150px',
+                position: 'relative',
+              }}
+              onMouseOver={e => {
+                if (!isUnlocked) return;
+                e.currentTarget.style.transform = 'scale(1.06)';
+                e.currentTarget.style.borderColor = isCompleted ? '#4CAF50' : '#FF6B35';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,107,53,0.2)';
+              }}
+              onMouseOut={e => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.borderColor = isCompleted ? '#4CAF50' : isUnlocked ? '#E8DDCA' : '#ccc';
+                e.currentTarget.style.boxShadow = isUnlocked ? '0 2px 12px rgba(0,0,0,0.07)' : 'none';
+              }}
+            >
+              {/* Completion badge */}
+              {isCompleted && (
+                <span style={{
+                  position: 'absolute', top: '10px', right: '12px',
+                  fontSize: '18px',
+                }}>✅</span>
+              )}
+              {/* Lock icon */}
+              {!isUnlocked && (
+                <span style={{
+                  position: 'absolute', top: '10px', right: '12px',
+                  fontSize: '18px',
+                }}>🔒</span>
+              )}
+
+              <span style={{ fontSize: '20px', fontWeight: 700, color: '#aaa', marginBottom: '6px' }}>
+                Level {level}
+              </span>
+              <span style={{ fontSize: '56px', lineHeight: 1, marginBottom: '10px' }}>
+                {isUnlocked ? LEVEL_ICONS[level] : '❓'}
+              </span>
+              <span style={{ fontSize: '17px', fontWeight: 700, color: isUnlocked ? '#2D2D2D' : '#aaa' }}>
+                {isUnlocked ? LEVEL_NAMES[level] : 'Locked'}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
 import { t } from '../../i18n';
-import { TOY_DEFINITIONS_2D, MISSIONS } from '../../missions/missionData';
+import { TOY_DEFINITIONS_2D, MISSIONS, LEVEL_TO_TOY, TOTAL_LEVELS } from '../../missions/missionData';
 import StarRating from './StarRating';
 import { computeStarRating } from '../../utils/mathUtils';
 
@@ -20,8 +20,13 @@ const btnStyle = (bg: string): React.CSSProperties => ({
 });
 
 /**
- * Results overlay — warm cream, shown after challenge ends.
- * Displays score, accuracy, per-part comparison, stars, Play Again, Home.
+ * Results overlay — shown after challenge ends (complete or timeout).
+ *
+ * Navigation buttons:
+ *   - Level 1 completed → "Next Level" (Bike) + "Play Again" + "Home"
+ *   - Level 2 completed → "Next Level" (Lorry) + "Play Again" + "Home"
+ *   - Level 3 completed → "Game Completed!" banner + "Play Again" + "Home"
+ *   - Any timeout → "Play Again" + "Home"
  */
 export default function ResultsOverlay(): React.ReactElement | null {
   const navigate = useNavigate();
@@ -33,6 +38,9 @@ export default function ResultsOverlay(): React.ReactElement | null {
   const timeTaken = useGameStore((s) => s.timeTaken);
   const partColors = useGameStore((s) => s.partColors);
   const activeToyId = useGameStore((s) => s.activeToyId);
+  const currentLevel = useGameStore((s) => s.currentLevel);
+  const unlockedLevels = useGameStore((s) => s.unlockedLevels);
+  const selectLevel = useGameStore((s) => s.selectLevel);
   const resetChallenge = useGameStore((s) => s.resetChallenge);
   const goHome = useGameStore((s) => s.goHome);
 
@@ -42,9 +50,20 @@ export default function ResultsOverlay(): React.ReactElement | null {
   const toyDef = activeToyId ? TOY_DEFINITIONS_2D[activeToyId] : null;
   const mission = activeToyId ? MISSIONS[activeToyId] : null;
 
+  const isComplete = phase === 'complete';
+  const nextLevel = currentLevel + 1;
+  const hasNextLevel = nextLevel <= TOTAL_LEVELS && unlockedLevels.includes(nextLevel);
+  const isGameOver = isComplete && currentLevel === TOTAL_LEVELS;
+
   const handleHome = () => {
     goHome();
     navigate('/');
+  };
+
+  const handleNextLevel = () => {
+    const nextToyId = LEVEL_TO_TOY[nextLevel];
+    selectLevel(nextLevel);
+    navigate(`/paint/${nextToyId}`);
   };
 
   return (
@@ -61,10 +80,32 @@ export default function ResultsOverlay(): React.ReactElement | null {
       padding: '28px 20px',
       fontFamily: 'system-ui, -apple-system, sans-serif',
     }}>
+      {/* Game Completed banner */}
+      {isGameOver && (
+        <div style={{
+          background: 'linear-gradient(135deg, #FF6B35, #FF8C42)',
+          color: '#fff',
+          padding: '16px 40px',
+          borderRadius: '16px',
+          fontSize: '22px',
+          fontWeight: 800,
+          marginBottom: '16px',
+          textAlign: 'center',
+          boxShadow: '0 4px 20px rgba(255,107,53,0.4)',
+        }}>
+          🏆 Game Completed! 🏆
+        </div>
+      )}
+
       {/* Title */}
       <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#2D2D2D', marginBottom: '6px', textAlign: 'center' }}>
         {phase === 'timeout' ? t('results.timeout', locale) : t('results.title', locale)}
       </h2>
+      {isComplete && !isGameOver && (
+        <p style={{ color: '#888', fontSize: '14px', marginBottom: '4px' }}>
+          Level {currentLevel} — {activeToyId ? activeToyId.charAt(0).toUpperCase() + activeToyId.slice(1) : ''}
+        </p>
+      )}
       <div style={{ marginBottom: '20px' }}>
         <StarRating stars={stars} size={38} />
       </div>
@@ -72,11 +113,11 @@ export default function ResultsOverlay(): React.ReactElement | null {
       {/* Stats row */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '24px' }}>
         {[
-          { label: t('results.score', locale), value: `${score}`, color: '#FF6B35' },
-          { label: t('results.accuracy', locale), value: `${score}%`, color: '#FF6B35' },
+          { label: t('results.score', locale),        value: `${score}`,        color: '#FF6B35' },
+          { label: t('results.accuracy', locale),     value: `${score}%`,       color: '#FF6B35' },
           { label: t('results.correctParts', locale), value: `${correctParts}`, color: '#4CAF50' },
           { label: t('results.incorrectParts', locale), value: `${incorrectParts}`, color: '#F44336' },
-          { label: t('results.timeTaken', locale), value: `${timeTaken}s`, color: '#888' },
+          { label: t('results.timeTaken', locale),    value: `${timeTaken}s`,   color: '#888' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{
             background: '#fff',
@@ -102,7 +143,9 @@ export default function ResultsOverlay(): React.ReactElement | null {
           {toyDef.parts.map((part) => {
             const target = mission.targets.find((m) => m.partName === part.name);
             const targetColor = target?.targetColor ?? '#CCCCCC';
-            const paintedColor = partColors[part.name] ?? '#FFFFFF';
+            // Use painted colour; fall back to defaultColor (not white) so
+            // wheels that were never clicked still show as correctly black.
+            const paintedColor = partColors[part.name] ?? part.defaultColor;
             const isMatch = paintedColor.toUpperCase() === targetColor.toUpperCase();
             return (
               <div key={part.name} style={{
@@ -145,16 +188,20 @@ export default function ResultsOverlay(): React.ReactElement | null {
 
       {/* Navigation buttons */}
       <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', paddingBottom: '20px' }}>
+        {/* Next Level — only if current level completed with ≥1 star and next is unlocked */}
+        {isComplete && hasNextLevel && (
+          <button onClick={handleNextLevel} style={btnStyle('#FF6B35')}>
+            ▶ Level {nextLevel} — {LEVEL_TO_TOY[nextLevel].charAt(0).toUpperCase() + LEVEL_TO_TOY[nextLevel].slice(1)}
+          </button>
+        )}
+
+        {/* Play Again — replay the same level */}
         <button onClick={resetChallenge} style={btnStyle('#4CAF50')}>
           {t('results.playAgain', locale)}
         </button>
-        <button
-          onClick={() => { goHome(); navigate('/'); }}
-          style={btnStyle('#4a90d9')}
-        >
-          {t('complete.chooseToy', locale)}
-        </button>
-        <button onClick={handleHome} style={btnStyle('#FF6B35')}>
+
+        {/* Home */}
+        <button onClick={handleHome} style={btnStyle('#4a90d9')}>
           {t('results.home', locale)}
         </button>
       </div>

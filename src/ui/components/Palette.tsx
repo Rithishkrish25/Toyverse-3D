@@ -4,10 +4,10 @@ import type { PaletteColor } from '../../store/types';
 
 const PALETTE_COLORS: PaletteColor[] = [
   { id: 'red', hex: '#FF0000' },
-  { id: 'orange', hex: '#FF8000' },
+  { id: 'coral-orange', hex: '#FF6B35' },
   { id: 'yellow', hex: '#FFFF00' },
   { id: 'green', hex: '#00AA00' },
-  { id: 'teal', hex: '#008080' },
+  { id: 'sky-blue', hex: '#87CEEB' },
   { id: 'blue', hex: '#0000FF' },
   { id: 'purple', hex: '#8000FF' },
   { id: 'pink', hex: '#FF69B4' },
