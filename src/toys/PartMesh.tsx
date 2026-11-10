@@ -17,6 +17,18 @@ export interface PartMeshProps {
   rotation?: [number, number, number];
   /** Scale of the mesh */
   scale?: [number, number, number] | number;
+  /** PBR material override: metalness (0.0-1.0, default 0.1) — Requirement 7.1, 7.2 */
+  metalness?: number;
+  /** PBR material override: roughness (0.0-1.0, default 0.6) — Requirement 7.3, 7.4 */
+  roughness?: number;
+  /** PBR material override: transparent flag (default false) — Requirement 4.4 */
+  transparent?: boolean;
+  /** PBR material override: opacity (0.0-1.0, default 1.0) — Requirement 4.4 */
+  opacity?: number;
+  /** Whether the mesh casts shadows (default false) */
+  castShadow?: boolean;
+  /** Whether the mesh receives shadows (default false) */
+  receiveShadow?: boolean;
 }
 
 /**
@@ -33,6 +45,10 @@ export interface PartMeshProps {
  * @param position - Mesh position [x, y, z].
  * @param rotation - Mesh rotation [x, y, z] in radians.
  * @param scale - Mesh scale, either uniform or [x, y, z].
+ * @param metalness - PBR metalness (default 0.1).
+ * @param roughness - PBR roughness (default 0.6).
+ * @param transparent - Material transparency flag (default false).
+ * @param opacity - Material opacity (default 1.0).
  * @returns A Three.js mesh with mode-appropriate colour and interaction behaviour.
  */
 export default function PartMesh({
@@ -42,9 +58,16 @@ export default function PartMesh({
   position,
   rotation,
   scale,
+  metalness = 0.1,
+  roughness = 0.6,
+  transparent = false,
+  opacity = 1.0,
+  castShadow = false,
+  receiveShadow = false,
 }: PartMeshProps): React.ReactElement {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const renderMode = useContext(ToyRenderModeContext);
 
@@ -73,7 +96,7 @@ export default function PartMesh({
   const handlePointerOver = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     if (materialRef.current) {
-      materialRef.current.emissive.set(0x666666);
+      materialRef.current.emissive.set(0x999999);
     }
   }, []);
 
@@ -90,8 +113,27 @@ export default function PartMesh({
       showNoPalettePromptAction();
       return;
     }
+    // Flash effect (Requirement 10.3)
+    if (materialRef.current) {
+      materialRef.current.emissive.set(0xFFFFFF);
+      materialRef.current.emissiveIntensity = 0.8;
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      flashTimerRef.current = setTimeout(() => {
+        if (materialRef.current) {
+          materialRef.current.emissive.set(0x000000);
+          materialRef.current.emissiveIntensity = 1.0;
+        }
+      }, 300);
+    }
     paintPart(partName, activeColor);
   }, [activeColor, partName, paintPart, showNoPalettePromptAction]);
+
+  // Cleanup flash timer on unmount
+  useEffect(() => {
+    return () => {
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    };
+  }, []);
 
   // In target mode: no pointer events
   const pointerHandlers = renderMode === 'paintable'
@@ -109,10 +151,19 @@ export default function PartMesh({
       rotation={rotation}
       scale={scale}
       userData={{ partName }}
+      castShadow={castShadow}
+      receiveShadow={receiveShadow}
       {...pointerHandlers}
     >
       {children}
-      <meshStandardMaterial ref={materialRef} color={displayColor} roughness={0.6} metalness={0.1} />
+      <meshStandardMaterial
+        ref={materialRef}
+        color={displayColor}
+        roughness={roughness}
+        metalness={metalness}
+        transparent={transparent}
+        opacity={opacity}
+      />
     </mesh>
   );
 }

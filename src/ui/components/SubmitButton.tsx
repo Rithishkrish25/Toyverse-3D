@@ -20,17 +20,17 @@ export default function SubmitButton(): React.ReactElement | null {
       onClick={submitChallenge}
       disabled={isDisabled}
       aria-label={t('painting.submit', locale)}
+      className="btn"
       style={{
         padding: '10px 28px',
         fontWeight: 700,
         fontSize: '15px',
-        background: isDisabled ? '#ccc' : '#FF6B35',
+        background: isDisabled ? '#ccc' : 'linear-gradient(135deg, #FF6B35, #FF8C42)',
         color: '#fff',
         border: 'none',
         borderRadius: '10px',
         cursor: isDisabled ? 'not-allowed' : 'pointer',
-        boxShadow: isDisabled ? 'none' : '0 3px 12px rgba(255,107,53,0.3)',
-        transition: 'all 0.15s',
+        boxShadow: isDisabled ? 'none' : '0 3px 12px rgba(255,107,53,0.35)',
         minHeight: '44px',
       }}
     >

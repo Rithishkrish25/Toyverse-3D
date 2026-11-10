@@ -36,6 +36,8 @@ export default function PaintingScreen(): React.ReactElement {
   const resumeTimer = useGameStore((s) => s.resumeTimer);
   const showNoPalettePrompt = useGameStore((s) => s.showNoPalettePrompt);
   const storageWarning = useGameStore((s) => s.storageWarning);
+  const currentLevel = useGameStore((s) => s.currentLevel);
+  const goHome = useGameStore((s) => s.goHome);
 
   const validToyId = VALID_TOY_IDS.includes(toyId as ToyId) ? (toyId as ToyId) : null;
 
@@ -78,7 +80,7 @@ export default function PaintingScreen(): React.ReactElement {
   const isPainting = phase === 'painting' || phase === 'submitting';
 
   return (
-    <div style={{
+    <div className="screen-fade" style={{
       background: '#FFF7E8',
       height: '100vh',
       display: 'flex',
@@ -100,19 +102,28 @@ export default function PaintingScreen(): React.ReactElement {
         flexWrap: 'wrap',
         gap: '8px',
       }}>
-        <HUD />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => { goHome(); navigate('/'); }}
+            className="btn"
+            style={{ background: 'rgba(0,0,0,0.06)', color: '#555', fontSize: '13px', padding: '6px 12px', minHeight: '36px', minWidth: 'auto', borderRadius: '8px', border: '1px solid #E8DDCA' }}
+          >
+            ← Home
+          </button>
+          <HUD />
+        </div>
         <span style={{ fontWeight: 700, fontSize: '15px', color: '#888' }}>
-          {t('painting.targetImage', locale)}
+          {activeToyId ? `Level ${currentLevel} — ${activeToyId.charAt(0).toUpperCase() + activeToyId.slice(1)}` : t('painting.targetImage', locale)}
         </span>
         <SubmitButton />
       </div>
 
       {/* ── Main area ── */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+      <div className="painting-main" style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
 
         {/* LEFT — 3D target reference (TargetImagePanel) */}
         {isPainting && (
-          <div style={{
+          <div className="painting-target-panel" style={{
             width: '38%',
             flexShrink: 0,
             background: '#1a1a2e',

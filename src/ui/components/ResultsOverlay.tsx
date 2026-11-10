@@ -55,6 +55,10 @@ export default function ResultsOverlay(): React.ReactElement | null {
   const hasNextLevel = nextLevel <= TOTAL_LEVELS && unlockedLevels.includes(nextLevel);
   const isGameOver = isComplete && currentLevel === TOTAL_LEVELS;
 
+  // Compute accuracy from part results, not from score
+  const totalParts = correctParts + incorrectParts;
+  const accuracy = totalParts > 0 ? Math.round((correctParts / totalParts) * 100) : 0;
+
   const handleHome = () => {
     goHome();
     navigate('/');
@@ -67,26 +71,28 @@ export default function ResultsOverlay(): React.ReactElement | null {
   };
 
   return (
-    <div style={{
-      position: 'absolute',
-      inset: 0,
-      background: 'rgba(255,247,232,0.97)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      overflowY: 'auto',
-      zIndex: 50,
-      padding: '28px 20px',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-    }}>
+    <div
+      className="overlay-enter"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(135deg, rgba(255,247,232,0.97), rgba(232,221,202,0.97))',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        overflowY: 'auto',
+        zIndex: 50,
+        padding: '28px 20px',
+        fontFamily: 'var(--font-body)',
+      }}>
       {/* Game Completed banner */}
       {isGameOver && (
         <div style={{
-          background: 'linear-gradient(135deg, #FF6B35, #FF8C42)',
+          background: 'linear-gradient(135deg, var(--color-primary), #FF8C42)',
           color: '#fff',
           padding: '16px 40px',
-          borderRadius: '16px',
+          borderRadius: 'var(--radius-large)',
           fontSize: '22px',
           fontWeight: 800,
           marginBottom: '16px',
@@ -97,8 +103,18 @@ export default function ResultsOverlay(): React.ReactElement | null {
         </div>
       )}
 
+      {/* Trophy icon — shown on successful completion, not duplicated on game-over banner */}
+      {!isGameOver && (stars > 0 || phase === 'complete') && (
+        <div style={{ fontSize: '48px', lineHeight: 1, marginBottom: '8px' }}>🏆</div>
+      )}
+
+      {/* Perfect score celebration */}
+      {stars === 3 && (
+        <div style={{ fontSize: '26px', letterSpacing: '6px', marginBottom: '6px' }}>🎉✨🎊</div>
+      )}
+
       {/* Title */}
-      <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#2D2D2D', marginBottom: '6px', textAlign: 'center' }}>
+      <h2 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--color-dark)', marginBottom: '6px', textAlign: 'center' }}>
         {phase === 'timeout' ? t('results.timeout', locale) : t('results.title', locale)}
       </h2>
       {isComplete && !isGameOver && (
@@ -113,20 +129,20 @@ export default function ResultsOverlay(): React.ReactElement | null {
       {/* Stats row */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '24px' }}>
         {[
-          { label: t('results.score', locale),        value: `${score}`,        color: '#FF6B35' },
-          { label: t('results.accuracy', locale),     value: `${score}%`,       color: '#FF6B35' },
-          { label: t('results.correctParts', locale), value: `${correctParts}`, color: '#4CAF50' },
-          { label: t('results.incorrectParts', locale), value: `${incorrectParts}`, color: '#F44336' },
+          { label: t('results.score', locale),        value: `${score}`,        color: 'var(--color-primary)' },
+          { label: t('results.accuracy', locale),     value: `${accuracy}%`,    color: 'var(--color-primary)' },
+          { label: t('results.correctParts', locale), value: `${correctParts}`, color: 'var(--color-success)' },
+          { label: t('results.incorrectParts', locale), value: `${incorrectParts}`, color: 'var(--color-danger)' },
           { label: t('results.timeTaken', locale),    value: `${timeTaken}s`,   color: '#888' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{
             background: '#fff',
-            border: '1.5px solid #E8DDCA',
-            borderRadius: '12px',
-            padding: '12px 18px',
+            border: '1.5px solid var(--color-sand)',
+            borderRadius: 'var(--radius-panel)',
+            padding: 'var(--space-4) 18px',
             textAlign: 'center',
             minWidth: '85px',
-            boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
+            boxShadow: 'var(--shadow-1)',
           }}>
             <div style={{ fontSize: '22px', fontWeight: 800, color }}>{value}</div>
             <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>{label}</div>
@@ -137,7 +153,7 @@ export default function ResultsOverlay(): React.ReactElement | null {
       {/* Per-part comparison */}
       {toyDef && mission && (
         <div style={{ width: '100%', maxWidth: '480px', marginBottom: '24px' }}>
-          <div style={{ fontWeight: 700, fontSize: '15px', color: '#2D2D2D', marginBottom: '10px', textAlign: 'center' }}>
+          <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-dark)', marginBottom: '10px', textAlign: 'center' }}>
             {t('results.partComparison', locale)}
           </div>
           {toyDef.parts.map((part) => {
@@ -151,12 +167,12 @@ export default function ResultsOverlay(): React.ReactElement | null {
               <div key={part.name} style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: 'var(--space-2)',
                 background: '#fff',
-                border: '1.5px solid #E8DDCA',
-                borderRadius: '8px',
-                padding: '8px 12px',
-                marginBottom: '6px',
+                border: '1.5px solid var(--color-sand)',
+                borderRadius: 'var(--radius-small)',
+                padding: 'var(--space-2) var(--space-3)',
+                marginBottom: 'var(--space-1)',
               }}>
                 <span style={{ flex: 1, fontSize: '14px', color: '#2D2D2D', fontWeight: 500 }}>
                   {part.label[locale]}

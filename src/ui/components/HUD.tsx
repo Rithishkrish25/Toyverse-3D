@@ -2,6 +2,7 @@ import React from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { formatTimer } from '../../utils/mathUtils';
 import { TOY_DEFINITIONS_2D } from '../../missions/missionData';
+import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 
 /**
  * HUD — shows timer (left), score (centre), and mission target colour hints (right).
@@ -16,7 +17,11 @@ export default function HUD(): React.ReactElement {
   const activeToyId = useGameStore((s) => s.activeToyId);
   const partColors = useGameStore((s) => s.partColors);
 
-  const isLowTime = remainingSeconds < 30 && phase === 'painting';
+  const animatedScore = useAnimatedNumber(score);
+
+  const timerClass = remainingSeconds > 60 ? 'timer-calm'
+    : remainingSeconds > 30 ? 'timer-warning'
+    : 'timer-urgent';
 
   // Build part label map from toy definitions
   const toyDef = activeToyId ? TOY_DEFINITIONS_2D[activeToyId] : null;
@@ -29,22 +34,21 @@ export default function HUD(): React.ReactElement {
       flexWrap: 'wrap',
     }}>
       {/* Timer — left */}
-      <div style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '8px 20px',
-        background: isLowTime ? '#FF4444' : '#fff',
-        border: `2px solid ${isLowTime ? '#FF4444' : '#E8DDCA'}`,
-        borderRadius: '10px',
-        fontFamily: 'monospace',
-        fontSize: '22px',
-        fontWeight: 700,
-        color: isLowTime ? '#fff' : '#2D2D2D',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        animation: isLowTime ? 'pulse-timer 0.5s ease-in-out infinite alternate' : 'none',
-        userSelect: 'none',
-      }}>
+      <div
+        className={timerClass}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '8px 20px',
+          border: `2px solid ${remainingSeconds > 60 ? '#E8DDCA' : remainingSeconds > 30 ? '#FFD700' : '#FF4444'}`,
+          borderRadius: '10px',
+          fontFamily: 'monospace',
+          fontSize: '22px',
+          fontWeight: 700,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          userSelect: 'none',
+        }}>
         <span style={{ fontSize: '18px' }}>⏱</span>
         {formatTimer(remainingSeconds)}
       </div>
@@ -64,7 +68,7 @@ export default function HUD(): React.ReactElement {
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
         userSelect: 'none',
       }}>
-        🎯 {score}
+        🎯 {animatedScore}
       </div>
 
       {/* Target colour hints — right */}
@@ -120,6 +124,7 @@ export default function HUD(): React.ReactElement {
                 }}>
                   {label}
                 </span>
+                {isCorrect && <span style={{ fontSize: '10px', color: '#22C55E' }}>✓</span>}
               </div>
             );
           })}

@@ -57,6 +57,12 @@ export default function SelectionScreen(): React.ReactElement {
         </button>
       </nav>
 
+      {/* Hero section */}
+      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+        <div style={{ fontSize: '52px', marginBottom: '8px' }}>🎨</div>
+        <p style={{ color: '#FF6B35', fontWeight: 700, fontSize: '14px', letterSpacing: '2px', textTransform: 'uppercase' }}>Toyverse 3D Workshop</p>
+      </div>
+
       <h1 style={{
         fontSize: 'clamp(24px, 4vw, 36px)',
         fontWeight: 800,
@@ -66,10 +72,9 @@ export default function SelectionScreen(): React.ReactElement {
       }}>
         Choose Your Level
       </h1>
-      <p style={{ color: '#888', marginBottom: '44px', fontSize: '16px', textAlign: 'center' }}>
-        Complete each level to unlock the next
+      <p style={{ color: '#888', marginBottom: '36px', fontSize: '15px', textAlign: 'center' }}>
+        Paint each toy to earn stars and unlock the next level
       </p>
-
       <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
         {Array.from({ length: TOTAL_LEVELS }, (_, i) => i + 1).map((level) => {
           const isUnlocked = unlockedLevels.includes(level);
@@ -85,7 +90,7 @@ export default function SelectionScreen(): React.ReactElement {
                 flexDirection: 'column',
                 alignItems: 'center',
                 padding: '28px 40px',
-                background: isUnlocked ? '#fff' : '#f0ede8',
+                background: isUnlocked ? 'linear-gradient(135deg, #fff 0%, #FFF7E8 100%)' : '#f0ede8',
                 border: isCompleted
                   ? '2px solid #4CAF50'
                   : isUnlocked

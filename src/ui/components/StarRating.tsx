@@ -23,6 +23,11 @@ export default function StarRating({ stars, size = 24 }: StarRatingProps): React
             fontSize: `${size}px`,
             color: i < stars ? '#FFD700' : '#444',
             lineHeight: 1,
+            // Sequential scale-in animation (Requirement 13.4)
+            animation: i < stars
+              ? `star-fill 400ms ease-out ${i * 150}ms both`
+              : 'none',
+            display: 'inline-block',
           }}
         >
           ★

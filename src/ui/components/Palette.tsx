@@ -37,23 +37,27 @@ export default function Palette(): React.ReactElement {
   return (
     <div className="palette" role="group" aria-label="Colour palette">
       {PALETTE_COLORS.map((color) => (
-        <button
+        <div
           key={color.id}
-          className={`palette-swatch${activeColor?.toUpperCase() === color.hex.toUpperCase() ? ' active' : ''}`}
-          style={{
-            backgroundColor: color.hex,
-            width: '48px',
-            minHeight: '48px',
-            border: activeColor?.toUpperCase() === color.hex.toUpperCase()
-              ? '4px solid #FFD700'
-              : '2px solid #333',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            transition: 'transform 0.1s, border 0.1s',
-          }}
-          onClick={() => handleSwatchClick(color.hex)}
-          aria-label={`Select colour ${color.id}`}
-        />
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}
+        >
+          <button
+            className={`palette-swatch${activeColor?.toUpperCase() === color.hex.toUpperCase() ? ' active' : ''}`}
+            style={{
+              backgroundColor: color.hex,
+              width: '44px',
+              height: '44px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              border: '2px solid #E8DDCA',
+            }}
+            onClick={() => handleSwatchClick(color.hex)}
+            aria-label={`Select colour ${color.id}`}
+          />
+          <span style={{ fontSize: '9px', color: '#888', textAlign: 'center', lineHeight: 1 }}>
+            {color.id}
+          </span>
+        </div>
       ))}
     </div>
   );

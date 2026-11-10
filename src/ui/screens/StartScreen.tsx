@@ -70,29 +70,37 @@ export default function StartScreen(): React.ReactElement {
 
       <button
         onClick={handleStart}
+        className="btn"
         style={{
           padding: '18px 56px',
           fontSize: '20px',
           fontWeight: 700,
-          background: '#FF6B35',
+          background: 'linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%)',
           color: '#fff',
           border: 'none',
           borderRadius: '14px',
           cursor: 'pointer',
-          boxShadow: '0 4px 16px rgba(255,107,53,0.35)',
-          transition: 'transform 0.15s, box-shadow 0.15s',
-        }}
-        onMouseOver={e => {
-          e.currentTarget.style.transform = 'scale(1.04)';
-          e.currentTarget.style.boxShadow = '0 6px 24px rgba(255,107,53,0.45)';
-        }}
-        onMouseOut={e => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.boxShadow = '0 4px 16px rgba(255,107,53,0.35)';
+          boxShadow: '0 4px 20px rgba(255,107,53,0.4)',
+          marginBottom: '32px',
         }}
       >
         {t('start.startGame', locale)}
       </button>
+
+      {/* Feature pills */}
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        {['🚗 3 Vehicles', '🎨 12 Colours', '⭐ 3 Star Ratings', '🏆 Achievements'].map((feat) => (
+          <span key={feat} style={{
+            padding: '6px 14px',
+            background: 'rgba(255,107,53,0.08)',
+            border: '1px solid rgba(255,107,53,0.2)',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: 600,
+            color: '#FF6B35',
+          }}>{feat}</span>
+        ))}
+      </div>
     </div>
   );
 }
